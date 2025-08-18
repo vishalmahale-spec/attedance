@@ -28,20 +28,20 @@
   </div>
 
   <script>
-    // 🔹 Replace this with your hosted Drive link after upload
+    // 🔹 Replace with your hosted GitHub Pages link
     const BASE_URL = "https://vishalmahale-spec.github.io/attedance/vk.html";
 
     // 🔹 Google Form link
     const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe4d5t2_nc9JtyKaBNBrseLnemajfXTDWdNaPrVCBqAobk3Qw/viewform";
 
-    // 🔹 Fixed reference location
+    // 🔹 Reference location (latitude, longitude)
     const REF_LAT = 20.036291;
     const REF_LON = 73.800364;
-    const ALLOWED_METERS = 20; // adjust as needed
+    const ALLOWED_METERS = 20; // allowed distance
 
-    // --- Token ---
+    // --- Token generation (changes every 90s) ---
     function currentToken() {
-      return Math.floor(Date.now() / 1000 / 90); // changes every 90s
+      return Math.floor(Date.now() / 1000 / 90);
     }
 
     // --- Haversine Distance ---
@@ -109,7 +109,9 @@
           const dist = getDistance(lat, lon, REF_LAT, REF_LON);
 
           if (dist <= ALLOWED_METERS) {
-            window.location.href = FORM_URL; // ✅ redirect to Google Form
+            // ✅ Open form in new tab
+            window.open(FORM_URL, "_blank");
+            document.getElementById("msg").innerText = "✅ Location verified. Form opened in new tab.";
           } else {
             document.getElementById("msg").innerText = "❌ You are too far away to mark attendance.";
           }
@@ -121,7 +123,7 @@
       );
     }
 
-    // --- Mode check ---
+    // --- Mode check (teacher vs student) ---
     window.onload = function() {
       const params = new URLSearchParams(window.location.search);
       const token = params.get("token");
@@ -133,5 +135,3 @@
   </script>
 </body>
 </html>
-
-
