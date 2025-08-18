@@ -87,54 +87,60 @@
       }, 1000);
     }
 
-    // --- Student: Verify ---
-    function verifyStudent(token) {
-      document.getElementById("teacherPanel").style.display = "none";
-      document.getElementById("studentPanel").style.display = "block";
 
-      if (parseInt(token) !== currentToken()) {
-        document.getElementById("msg").innerText = "❌ QR expired. Ask teacher to rescan.";
-        return;
-      }
 
-      if (!navigator.geolocation) {
-        document.getElementById("msg").innerText = "❌ Geolocation not supported.";
-        return;
-      }
 
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          const dist = getDistance(lat, lon, REF_LAT, REF_LON);
+    
+  // --- Student: Verify ---
+  function verifyStudent(token) {
+    document.getElementById("teacherPanel").style.display = "none";
+    document.getElementById("studentPanel").style.display = "block";
 
-          if (dist <= ALLOWED_METERS) {
-            // ✅ Open form in new tab
-            window.open(FORM_URL, "_blank");
-            document.getElementById("msg").innerText = "✅ Location verified. Form opened in new tab.";
-          } else {
-            document.getElementById("msg").innerText = "❌ You are too far away to mark attendance.";
+    if (parseInt(token) !== currentToken()) {
+      document.getElementById("msg").innerText = "❌ QR expired. Ask teacher to rescan.";
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      document.getElementById("msg").innerText = "❌ Geolocation not supported.";
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const dist = getDistance(lat, lon, REF_LAT, REF_LON);
+
+        if (dist <= ALLOWED_METERS) {
+          // ✅ Ask student for Roll Number
+          const rollNo = prompt("Enter your Roll Number:");
+          if (!rollNo) {
+            document.getElementById("msg").innerText = "❌ Roll Number required.";
+            return;
           }
-        },
-        err => {
-          document.getElementById("msg").innerText = "❌ Location access denied.";
-        },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-      );
-    }
 
-    // --- Mode check (teacher vs student) ---
-    window.onload = function() {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get("token");
+          // ✅ Build prefilled Google Form URL
+          const prefillURL = "https://docs.google.com/forms/d/e/XXXXXXX/viewform?usp=pp_url&entry.123456789="
+                             + encodeURIComponent(rollNo);
 
-      if (token) {
-        verifyStudent(token);
-      }
-    }
+          // ✅ Open prefilled form
+          window.open(prefillURL, "_blank");
+          document.getElementById("msg").innerText = "✅ Location verified. Form opened with your Roll No.";
+        } else {
+          document.getElementById("msg").innerText = "❌ You are too far away to mark attendance.";
+        }
+      },
+      err => {
+        document.getElementById("msg").innerText = "❌ Location access denied.";
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+    );
+  }
   </script>
 </body>
 </html>
+
 
 
 
