@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Attendance QR System</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; text-align: center; padding: 20px; }
+    #qr img { margin-top:16px; width:280px; height:280px; }
+    #status, #countdown, #msg { margin-top:10px; font-size:14px; }
+    small { color:#666; }
+    button { padding:10px 20px; margin:10px; border:none; border-radius:8px; background:#1976d2; color:#fff; font-size:16px; cursor:pointer; }
+    button:hover { background:#0d47a1; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+</head>
+<body>
+  <h2>Attendance QR System</h2>
+  <div id="teacherPanel">
+    <button onclick="generateQR()">Create QR Code</button>
+    <div id="qr"></div>
+    <div id="status"><small>Click button to generate QR</small></div>
+    <div id="countdown"></div>
+  </div>
+
+  <div id="studentPanel" style="display:none;">
+    <h3>Attendance Verification</h3>
+    <div id="msg">Checking your location…</div>
+  </div>
+
+  <script>
+    // 🔹 Replace this with your hosted Drive link after upload
+    const BASE_URL = "https://drive.google.com/uc?export=view&id=YOUR_FILE_ID_HERE";
+
+    // 🔹 Google Form link
+    const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe4d5t2_nc9JtyKaBNBrseLnemajfXTDWdNaPrVCBqAobk3Qw/viewform?usp=dialog";
+
+    // 🔹 Fixed reference location
+    const REF_LAT = 20.036291;
+    const REF_LON = 73.800364;
+    const ALLOWED_METERS = 20; // adjust as needed
+
+    // --- Token ---
+    function currentToken() {
+      return Math.floor(Date.now() / 1000 / 90); // changes every 90s
+    }
+
+    // --- Haversine Distance ---
+    function getDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const toRad = d => d * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2)**2 +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    // --- Teacher: Generate QR ---
+    function generateQR() {
+      const token = currentToken();
+      const url = BASE_URL + "?token=" + token;
+      const qr = new QRious({ value: url, size: 280 });
+
+      const container = document.getElementById("qr");
+      container.innerHTML = "";
+      const img = document.createElement("img");
+      img.src = qr.toDataURL();
+      container.appendChild(img);
+
+      document.getElementById("status").innerHTML = `<small>QR ready. Token: ${token}</small>`;
+      startCountdown(90);
+    }
+
+    let timer;
+    function startCountdown(seconds) {
+      clearInterval(timer);
+      let remaining = seconds;
+      timer = setInterval(() => {
+        if (remaining <= 0) {
+          clearInterval(timer);
+          generateQR();
+        } else {
+          document.getElementById("countdown").innerText = `QR refreshes in ${remaining}s`;
+          remaining--;
+        }
+      }, 1000);
+    }
+
+    // --- Student: Verify ---
+    function verifyStudent(token) {
+      document.getElementById("teacherPanel").style.display = "none";
+      document.getElementById("studentPanel").style.display = "block";
+
+      if (parseInt(token) !== currentToken()) {
+        document.getElementById("msg").innerText = "❌ QR expired. Ask teacher to rescan.";
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        document.getElementById("msg").innerText = "❌ Geolocation not supported.";
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const dist = getDistance(lat, lon, REF_LAT, REF_LON);
+
+          if (dist <= ALLOWED_METERS) {
+            window.location.href = FORM_URL; // ✅ redirect to Google Form
+          } else {
+            document.getElementById("msg").innerText = "❌ You are too far away to mark attendance.";
+          }
+        },
+        err => {
+          document.getElementById("msg").innerText = "❌ Location access denied.";
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      );
+    }
+
+    // --- Mode check ---
+    window.onload = function() {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get("token");
+
+      if (token) {
+        verifyStudent(token);
+      }
+    }
+  </script>
+</body>
+</html>
