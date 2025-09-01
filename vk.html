@@ -31,8 +31,8 @@
     // 🔹 Replace with your hosted GitHub Pages link
     const BASE_URL = "https://vishalmahale-spec.github.io/attedance/vk.html";
 
-    // 🔹 Google Form link
-    const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe4d5t2_nc9JtyKaBNBrseLnemajfXTDWdNaPrVCBqAobk3Qw/viewform";
+    // 🔹 Google Apps Script Web App link
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx-NV-wPzon0fz3U9g6DLkoCqS-lY2ufR77X0lfg6QB3Pnb42s7s89v3GDSW7K7knhr/exec";
 
     // 🔹 Reference location (latitude, longitude)
     const REF_LAT = 20.036297;
@@ -87,7 +87,7 @@
       }, 1000);
     }
 
-    // --- Student: Verify ---
+    // --- Student: Verify & Submit ---
     function verifyStudent(token) {
       document.getElementById("teacherPanel").style.display = "none";
       document.getElementById("studentPanel").style.display = "block";
@@ -109,9 +109,21 @@
           const dist = getDistance(lat, lon, REF_LAT, REF_LON);
 
           if (dist <= ALLOWED_METERS) {
-            // ✅ Open form in new tab
-            window.open(FORM_URL, "_blank");
-            document.getElementById("msg").innerText = "✅ Location verified. Form opened in new tab.";
+            const roll = prompt("Enter your Roll No:");
+            if (!roll) {
+              document.getElementById("msg").innerText = "⚠️ Roll number required.";
+              return;
+            }
+
+            fetch(`${SCRIPT_URL}?roll=${encodeURIComponent(roll)}&lat=${lat}&lon=${lon}&token=${token}`)
+              .then(r => r.text())
+              .then(txt => {
+                document.getElementById("msg").innerText = "✅ Attendance marked successfully.";
+              })
+              .catch(err => {
+                document.getElementById("msg").innerText = "⚠️ Error submitting attendance.";
+              });
+
           } else {
             document.getElementById("msg").innerText = "❌ You are too far away to mark attendance.";
           }
@@ -135,8 +147,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
